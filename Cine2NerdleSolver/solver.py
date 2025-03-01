@@ -6,42 +6,39 @@ from Cine2NerdleSolver.models import Movie
 # Todo: Make Used_movies store IDs instead of movie objects
 
 class Cine2NerdleSolver:
-    def __init__(self, database, winning_genre, opponent_genre):
+    def __init__(self, database, winning_genre, opponent_genre, strategy, candidateSize, maxLinks):
         self.database = database
         self.winning_genre = winning_genre
         self.opponent_genre = opponent_genre
         self.used_movies = set()
         self.person_frequency = {}
+        self.strategy = strategy
+        self.candidateSize = candidateSize
+        self.maxLinks = maxLinks
 
-    def findNextMovie(self, currentMovie: Movie):
-        print("Available connection genres for current movie:", list(currentMovie.movies.keys()))
+    def findNextMovies(self, currentMovie: Movie):
+        # print("Available connection genres for current movie:", list(currentMovie.movies.keys()))
 
         # Greedy sol: Pick whatever / rush win condition
+        if self.strategy is None or self.strategy == "GREEDY":
+            # 1) Check winning genre first.
+            winners = self.findMovies(self.winning_genre, currentMovie)
 
-        # 1) Check winning genre first.
-        winning_index = self.findMovie(self.winning_genre, currentMovie)
+            # 2) Look at all other genres.
+            others = []
+            for genre in currentMovie.movies:
+                if genre == self.winning_genre or genre == self.opponent_genre:
+                   continue
+                others.append(self.findMovies(genre, currentMovie))
+            # 3) Check losing genre if and only if no other options
+            if len(others) < self.candidateSize:
+                others.append(self.findMovies(self.opponent_genre, currentMovie))
+            winners.append(others)
 
-        if winning_index is not None:
-            print("Found candidate in winning genre:", self.database.movies[winning_index].name)
-            return self.database.movies[winning_index]
+            return winners
 
-        # 2) Look at all other genres.
-        for genre in currentMovie.movies:
-            if genre == self.winning_genre or genre == self.opponent_genre:
-                continue
-            candidate_index = self.findMovie(genre, currentMovie)
-            if candidate_index is not None:
-                print("Found candidate in genre", genre, ":", self.database.movies[candidate_index].name)
-                return self.database.movies[candidate_index]
 
-        # 3) Look at opponent genre last.
-        opponent_index = self.findMovie(self.opponent_genre, currentMovie)
-        if opponent_index is not None:
-            print("Found candidate in opponent genre:", self.database.movies[opponent_index].name)
-            return self.database.movies[opponent_index]
 
-        print("No valid candidate found.")
-        return None
 
     def isValid(self, A: Movie, B: Movie):
         # Check if B is used
@@ -50,19 +47,24 @@ class Cine2NerdleSolver:
         # Return true if any available connection:
         for personA in A.people:
             for personB in B.people:
-                if personA.name == personB.name and personA.id == personB.id and self.person_frequency.get(personA, 0) < 3:
+                if personA.name == personB.name and personA.id == personB.id and self.person_frequency.get(personA, 0) < self.maxLinks:
                     return True
         # None found
         return False
 
-    def findMovie(self, genre: str, currentMovie: Movie):
+    def findMovies(self, genre: str, currentMovie: Movie):
+        candidates = []
         if currentMovie.movies.get(genre) is None:
-            return None
+            return candidates
+        count = 0
         for i in currentMovie.movies.get(genre):
-            movie = self.database.movies[i]
-            if self.isValid(currentMovie, movie):
-                return i
-        return None
+            if count == self.candidateSize: break
+            candidate = self.database.movies[i]
+            if self.isValid(currentMovie, candidate):
+                candidates.append(candidate)
+            count += 1
+        return candidates
+
 
     def add(self, A: Movie, B: Movie, update_frequency=True):
         # Mark Movie B as used.
