@@ -1,4 +1,4 @@
-# Cine2NerdleSolver
+# Cine2NerdleSolver 
 
 [Cine2Nerdle](https://www.cinenerdle2.app/battle) is a movie-connection game where two players take turns linking movies by their shared cast and crew. Although it looks simple, perfect play entails graph theory, combinatorial complexity, and clever heuristics to even enter the realm of possibility. This program attempts to fix that.
 
