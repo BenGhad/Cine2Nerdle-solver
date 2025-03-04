@@ -1,3 +1,9 @@
+"""
+Configuration module for Cine2NerdleSolver.
+
+Loads environment variables from a .env file and sets up the API key for TMDB.
+"""
+
 import os
 from dotenv import load_dotenv
 
